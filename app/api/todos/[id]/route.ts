@@ -5,9 +5,10 @@ import { Todo, TodoInput } from '@/types/todo';
 // PUT /api/todos/[id] - Update todo
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const id = parseInt(params.id);
     const body: TodoInput = await request.json();
 
@@ -27,23 +28,34 @@ export async function PUT(
       );
     }
 
+    // Validate title if provided
+    if (body.title !== undefined && (!body.title || body.title.trim() === '')) {
+      return NextResponse.json(
+        { error: 'Title is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get existing todo to merge with updates
+    const existingTodo = (existing as Todo[])[0];
+
     const query = `
       UPDATE todos
       SET title = ?, description = ?, category = ?, priority = ?, dueDate = ?, progress = ?
       WHERE id = ?
     `;
 
-    const params = [
-      body.title,
-      body.description || null,
-      body.category || null,
-      body.priority || 'medium',
-      body.dueDate || null,
-      body.progress || 'not_started',
+    const queryParams = [
+      body.title !== undefined ? body.title : existingTodo.title,
+      body.description !== undefined ? (body.description || null) : existingTodo.description,
+      body.category !== undefined ? (body.category || null) : existingTodo.category,
+      body.priority || existingTodo.priority || 'medium',
+      body.dueDate !== undefined ? (body.dueDate || null) : existingTodo.dueDate,
+      body.progress !== undefined ? body.progress : existingTodo.progress || 'not_started',
       id,
     ];
 
-    await pool.execute(query, params);
+    await pool.execute(query, queryParams);
 
     // Fetch the updated todo
     const [rows] = await pool.execute('SELECT * FROM todos WHERE id = ?', [id]);
@@ -62,9 +74,10 @@ export async function PUT(
 // DELETE /api/todos/[id] - Delete todo
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const id = parseInt(params.id);
 
     if (isNaN(id)) {

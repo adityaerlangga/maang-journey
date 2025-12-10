@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* React Select Custom Styles */
+.react-select-container {
+  width: 100%;
+}
+
+.react-select__control {
+  border-color: #d1d5db !important;
+  box-shadow: none !important;
+}
+
+.react-select__control:hover {
+  border-color: #3b82f6 !important;
+}
+
+.react-select__control--is-focused {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+}
+
+.react-select__menu {
+  z-index: 9999 !important;
+}

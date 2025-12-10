@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Todo, TodoInput, Priority, Progress } from '@/types/todo';
+import Select from 'react-select';
 
 interface TodoFormProps {
   todo?: Todo | null;
@@ -9,6 +10,18 @@ interface TodoFormProps {
   onCancel: () => void;
   existingCategories: string[];
 }
+
+const priorityOptions = [
+  { value: 'low' as Priority, label: 'Low' },
+  { value: 'medium' as Priority, label: 'Medium' },
+  { value: 'high' as Priority, label: 'High' },
+];
+
+const progressOptions = [
+  { value: 'not_started' as Progress, label: 'Not Started' },
+  { value: 'in_progress' as Progress, label: 'In Progress' },
+  { value: 'completed' as Progress, label: 'Completed' },
+];
 
 export default function TodoForm({ todo, onSave, onCancel, existingCategories }: TodoFormProps) {
   const [formData, setFormData] = useState<TodoInput>({
@@ -33,6 +46,20 @@ export default function TodoForm({ todo, onSave, onCancel, existingCategories }:
         dueDate: todo.dueDate ? todo.dueDate.split('T')[0] : '',
         progress: todo.progress,
       });
+      setNewCategory('');
+      setUseNewCategory(false);
+    } else {
+      // Reset form when creating new todo
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        priority: 'medium',
+        dueDate: '',
+        progress: 'not_started',
+      });
+      setNewCategory('');
+      setUseNewCategory(false);
     }
   }, [todo]);
 
@@ -54,13 +81,63 @@ export default function TodoForm({ todo, onSave, onCancel, existingCategories }:
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const categoryOptions = existingCategories.map(cat => ({
+    value: cat,
+    label: cat,
+  }));
+
+  const customSelectStyles = {
+    control: (base: any) => ({
+      ...base,
+      borderColor: '#d1d5db',
+      boxShadow: 'none',
+      '&:hover': {
+        borderColor: '#3b82f6',
+      },
+    }),
+    option: (base: any, state: any) => ({
+      ...base,
+      backgroundColor: state.isSelected
+        ? '#3b82f6'
+        : state.isFocused
+        ? '#eff6ff'
+        : 'white',
+      color: state.isSelected ? 'white' : '#1f2937',
+      '&:active': {
+        backgroundColor: '#3b82f6',
+        color: 'white',
+      },
+    }),
+  };
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onCancel();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {todo ? 'Edit Todo' : 'Create New Todo'}
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">
+              {todo ? 'Edit Todo' : 'Create New Todo'}
+            </h2>
+            <button
+              onClick={onCancel}
+              className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Title */}
@@ -119,18 +196,16 @@ export default function TodoForm({ todo, onSave, onCancel, existingCategories }:
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 ) : (
-                  <select
-                    value={formData.category || ''}
-                    onChange={(e) => handleChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select category</option>
-                    {existingCategories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    options={categoryOptions}
+                    value={categoryOptions.find(opt => opt.value === formData.category) || null}
+                    onChange={(option) => handleChange('category', option?.value || '')}
+                    placeholder="Select category"
+                    isClearable
+                    styles={customSelectStyles}
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                  />
                 )}
               </div>
             </div>
@@ -141,30 +216,28 @@ export default function TodoForm({ todo, onSave, onCancel, existingCategories }:
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Priority
                 </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => handleChange('priority', e.target.value as Priority)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
+                <Select
+                  options={priorityOptions}
+                  value={priorityOptions.find(opt => opt.value === formData.priority) || null}
+                  onChange={(option) => handleChange('priority', option?.value || 'medium')}
+                  styles={customSelectStyles}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Progress
                 </label>
-                <select
-                  value={formData.progress}
-                  onChange={(e) => handleChange('progress', e.target.value as Progress)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="not_started">Not Started</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
+                <Select
+                  options={progressOptions}
+                  value={progressOptions.find(opt => opt.value === formData.progress) || null}
+                  onChange={(option) => handleChange('progress', option?.value || 'not_started')}
+                  styles={customSelectStyles}
+                  className="react-select-container"
+                  classNamePrefix="react-select"
+                />
               </div>
             </div>
 
@@ -203,4 +276,3 @@ export default function TodoForm({ todo, onSave, onCancel, existingCategories }:
     </div>
   );
 }
-

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Todo, TodoInput, TodoFilters } from '@/types/todo';
 import TodoList from '@/components/TodoList';
 import TodoForm from '@/components/TodoForm';
+import { Toaster, toast } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -32,7 +34,9 @@ export default function Home() {
       const data = await response.json();
       setTodos(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error('Error fetching todos:', err);
     } finally {
       setLoading(false);
@@ -59,9 +63,12 @@ export default function Home() {
       }
 
       setShowForm(false);
+      toast.success('Todo created successfully!');
       fetchTodos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error('Error creating todo:', err);
     }
   };
@@ -84,16 +91,35 @@ export default function Home() {
       }
 
       setEditingTodo(null);
+      setShowForm(false);
+      toast.success('Todo updated successfully!');
       fetchTodos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error('Error updating todo:', err);
     }
   };
 
   // Delete todo
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this todo?')) {
+    const todo = todos.find(t => t.id === id);
+    const todoTitle = todo?.title || 'this todo';
+
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to delete "${todoTitle}"? This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 
@@ -106,9 +132,12 @@ export default function Home() {
         throw new Error('Failed to delete todo');
       }
 
+      toast.success('Todo deleted successfully!');
       fetchTodos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error('Error deleting todo:', err);
     }
   };
@@ -126,7 +155,11 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...todo,
+          title: todo.title,
+          description: todo.description,
+          category: todo.category,
+          priority: todo.priority,
+          dueDate: todo.dueDate,
           progress: nextProgress,
         }),
       });
@@ -135,9 +168,11 @@ export default function Home() {
         throw new Error('Failed to update todo');
       }
 
+      toast.success(`Progress updated to ${nextProgress.replace('_', ' ')}`);
       fetchTodos();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      toast.error(errorMessage);
       console.error('Error updating todo:', err);
     }
   };
@@ -145,6 +180,13 @@ export default function Home() {
   // Edit todo
   const handleEdit = (todo: Todo) => {
     setEditingTodo(todo);
+    setShowForm(true);
+  };
+
+  // Close form and reset
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setEditingTodo(null);
   };
 
   // Get existing categories
@@ -154,6 +196,30 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
@@ -181,7 +247,10 @@ export default function Home() {
         {/* Create Button */}
         <div className="mb-6">
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              setEditingTodo(null);
+              setShowForm(true);
+            }}
             className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
           >
             + Create New Todo
@@ -205,14 +274,11 @@ export default function Home() {
         )}
 
         {/* Todo Form Modal */}
-        {(showForm || editingTodo) && (
+        {showForm && (
           <TodoForm
             todo={editingTodo}
             onSave={editingTodo ? handleUpdate : handleCreate}
-            onCancel={() => {
-              setShowForm(false);
-              setEditingTodo(null);
-            }}
+            onCancel={handleCloseForm}
             existingCategories={existingCategories}
           />
         )}
