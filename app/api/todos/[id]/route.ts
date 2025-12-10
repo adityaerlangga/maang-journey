@@ -2,6 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { Todo, TodoInput } from '@/types/todo';
 
+// GET /api/todos/[id] - Get single todo
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await context.params;
+    const id = parseInt(params.id);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: 'Invalid todo ID' },
+        { status: 400 }
+      );
+    }
+
+    const [rows] = await pool.execute('SELECT * FROM todos WHERE id = ?', [id]);
+    const todos = rows as Todo[];
+
+    if (todos.length === 0) {
+      return NextResponse.json(
+        { error: 'Todo not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(todos[0]);
+  } catch (error) {
+    console.error('Error fetching todo:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch todo' },
+      { status: 500 }
+    );
+  }
+}
+
 // PUT /api/todos/[id] - Update todo
 export async function PUT(
   request: NextRequest,

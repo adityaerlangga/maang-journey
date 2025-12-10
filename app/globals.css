@@ -1,49 +1,24 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* React Select Custom Styles */
+/* Minimal CSS for react-select - necessary for library integration */
 .react-select-container {
   width: 100%;
 }
 
 .react-select__control {
-  border-color: #d1d5db !important;
-  box-shadow: none !important;
+  border-color: rgb(209 213 219);
+  box-shadow: none;
 }
 
 .react-select__control:hover {
-  border-color: #3b82f6 !important;
+  border-color: rgb(59 130 246);
 }
 
 .react-select__control--is-focused {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .react-select__menu {
-  z-index: 9999 !important;
+  z-index: 9999;
 }
