@@ -2,7 +2,7 @@
 
 A full-stack Next.js application with TypeScript and MySQL database for tracking your journey to becoming a world-class software engineer at MAANG companies.
 
-![Demo Screenshot](./demo.png)
+![Demo Screenshot](./public/demo-app.png)
 
 ## Features
 
